@@ -1,0 +1,159 @@
+{
+  "version": 2,
+  "data_sources": {
+    "tables": [
+      {
+        "identifier": "workspace.airbnb_lakehouse.gold_city_metrics"
+      },
+      {
+        "identifier": "workspace.airbnb_lakehouse.gold_listings_analytics"
+      },
+      {
+        "identifier": "workspace.airbnb_lakehouse.gold_model_predictions"
+      }
+    ]
+  },
+  "instructions": {
+    "text_instructions": [
+      {
+        "id": "d3e93d7d4adb5ab28ee531207830f09f",
+        "content": [
+          "## General Domain Context & Data Rules",
+          "1. This Genie Space answers questions about the Canadian short-term rental market (Airbnb) and price prediction models.",
+          "2. All prices, baseline prices, predictions, and errors are in Canadian Dollars (CAD). Never convert currencies.",
+          "3. City Mapping & Synonyms:",
+          "   - 'City A' refers to Toronto (filter: `LOWER(city) = 'toronto'`).",
+          "   - 'City B' refers to Vancouver (filter: `LOWER(city) = 'vancouver'`).",
+          "   - 'City C' refers to Montreal (filter: `LOWER(city) = 'montreal'`).",
+          "4. Room Type Mapping:",
+          "   - 'Entire homes', 'entire apartments', or 'entire place' corresponds to `room_type = 'entire home/apt'`.",
+          "   - 'Private rooms' corresponds to `room_type = 'private room'`.",
+          "5. Pricing Model Interpretation (Under-pricing & Over-pricing):",
+          "   - 'Under-price' or 'under-priced' means the model predicted a LOWER price than actual market price (`predicted_price < actual_price`).",
+          "   - Under-pricing magnitude is measured by `underprice_amount` (i.e. `actual_price - predicted_price`).",
+          "   - 'Over-price' or 'over-priced' means the model predicted a HIGHER price than actual (`predicted_price > actual_price`).",
+          "   - 'Where does the model under-price listings the most?': Group by `neighbourhood` (and/or `city`) and order by average underprice amount (`avg_underprice`) or underpriced listing count descending.",
+          "6. Calculations & Best Practices:",
+          "   - When calculating medians, ALWAYS use `percentile_approx(col, 0.5)` or `median(col)`.",
+          "   - Model accuracy/error is measured using `absolute_error` (`abs(actual_price - predicted_price)`), which represents MAE.",
+          "   - Always filter for statistical significance with `HAVING count(*) >= 10` or `HAVING count(*) >= 20` when ranking neighbourhoods.",
+          "   - Use `gold_listings_analytics` for listing-level and neighbourhood questions, and `gold_city_metrics` for high-level market summaries."
+        ]
+      }
+    ],
+    "example_question_sqls": [
+      {
+        "id": "25706cc32ad25306be284cd8d541ff82",
+        "question": [
+          "What is the model MAE and baseline MAE for each city?"
+        ],
+        "sql": [
+          "SELECT initcap(city) AS city, count(*) AS total_listings, ROUND(avg(absolute_error), 2) AS model_mae_cad, ROUND(avg(abs(actual_price - baseline_price)), 2) AS baseline_mae_cad, ROUND(100.0 * (avg(abs(actual_price - baseline_price)) - avg(absolute_error)) / avg(abs(actual_price - baseline_price)), 1) AS pct_better_than_baseline FROM workspace.airbnb_lakehouse.gold_listings_analytics GROUP BY city ORDER BY total_listings DESC"
+        ]
+      },
+      {
+        "id": "4f47b428dd0759c8844793abb471c53d",
+        "question": [
+          "Which neighbourhoods in Vancouver have the most listings?"
+        ],
+        "sql": [
+          "SELECT neighbourhood, count(*) AS total_listings FROM workspace.airbnb_lakehouse.gold_listings_analytics WHERE LOWER(city) = 'vancouver' GROUP BY neighbourhood ORDER BY total_listings DESC LIMIT 10"
+        ]
+      },
+      {
+        "id": "570e811fbe6e518b955cd3b50c0d27cb",
+        "question": [
+          "What is the median price of entire homes in City A?"
+        ],
+        "sql": [
+          "SELECT ROUND(percentile_approx(actual_price, 0.5), 2) AS median_price_cad FROM workspace.airbnb_lakehouse.gold_listings_analytics WHERE LOWER(city) = 'toronto' AND room_type = 'entire home/apt'"
+        ]
+      },
+      {
+        "id": "69f633f3b44058b288bb3e7011b10bc0",
+        "question": [
+          "Which neighbourhoods in City B have the most listings?"
+        ],
+        "sql": [
+          "SELECT neighbourhood, count(*) AS total_listings FROM workspace.airbnb_lakehouse.gold_listings_analytics WHERE LOWER(city) = 'vancouver' GROUP BY neighbourhood ORDER BY total_listings DESC LIMIT 10"
+        ]
+      },
+      {
+        "id": "7f07018044f15e7e99adc13f90798c30",
+        "question": [
+          "What are the most expensive neighbourhoods by median price in Toronto?"
+        ],
+        "sql": [
+          "SELECT neighbourhood, count(*) AS total_listings, ROUND(percentile_approx(actual_price, 0.5), 2) AS median_price_cad FROM workspace.airbnb_lakehouse.gold_listings_analytics WHERE LOWER(city) = 'toronto' GROUP BY neighbourhood HAVING count(*) >= 20 ORDER BY median_price_cad DESC LIMIT 5"
+        ]
+      },
+      {
+        "id": "b689b1c455be5e53b2586cd9ccaa047b",
+        "question": [
+          "Where does the model under-price listings the most?"
+        ],
+        "sql": [
+          "SELECT city, neighbourhood, count(*) AS total_listings, count(CASE WHEN is_underpriced = 1 THEN 1 END) AS underpriced_count, ROUND(100.0 * count(CASE WHEN is_underpriced = 1 THEN 1 END) / count(*), 1) AS pct_underpriced, ROUND(avg(underprice_amount), 2) AS avg_underprice_cad, ROUND(max(actual_price - predicted_price), 2) AS max_underprice_cad FROM workspace.airbnb_lakehouse.gold_listings_analytics GROUP BY city, neighbourhood HAVING count(*) >= 20 ORDER BY avg_underprice_cad DESC LIMIT 10"
+        ]
+      },
+      {
+        "id": "eb2a44178fbf5710881de156ab1f59a3",
+        "question": [
+          "What is the median price of entire homes in Toronto?"
+        ],
+        "sql": [
+          "SELECT ROUND(percentile_approx(actual_price, 0.5), 2) AS median_price_cad FROM workspace.airbnb_lakehouse.gold_listings_analytics WHERE LOWER(city) = 'toronto' AND room_type = 'entire home/apt'"
+        ]
+      },
+      {
+        "id": "f96cd515b2ae5ab48bfe67e847de48f5",
+        "question": [
+          "Compare median prices and listing counts across room types in Vancouver"
+        ],
+        "sql": [
+          "SELECT room_type, count(*) AS total_listings, ROUND(percentile_approx(actual_price, 0.5), 2) AS median_price_cad, ROUND(avg(actual_price), 2) AS avg_price_cad FROM workspace.airbnb_lakehouse.gold_listings_analytics WHERE LOWER(city) = 'vancouver' GROUP BY room_type ORDER BY total_listings DESC"
+        ]
+      }
+    ]
+  },
+  "config": {
+    "sample_questions": [
+      {
+        "id": "48253c7f7b8b52bcb6f1f0cf01713121",
+        "question": [
+          "Compare median prices and listing counts across room types in Vancouver"
+        ]
+      },
+      {
+        "id": "58fb7dc11d085380b1448510fab2b386",
+        "question": [
+          "What are the top 5 most expensive neighbourhoods in Toronto?"
+        ]
+      },
+      {
+        "id": "6e2c55ab65585e93a30296a9df7804c7",
+        "question": [
+          "What is the model MAE and baseline MAE for each city?"
+        ]
+      },
+      {
+        "id": "cf7afb96230459f29dd32fbcea04395e",
+        "question": [
+          "What is the median price of entire homes in City A (Toronto)?"
+        ]
+      },
+      {
+        "id": "e0e6ed32931f5f8ca71c3abf525c1860",
+        "question": [
+          "Which neighbourhoods in City B (Vancouver) have the most listings?"
+        ]
+      },
+      {
+        "id": "e435ab1dd3d253168ad553a5eec5f5ac",
+        "question": [
+          "Where does the model under-price listings the most?"
+        ]
+      }
+    ]
+  }
+}

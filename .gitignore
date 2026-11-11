@@ -19,3 +19,5 @@ Thumbs.db
 # Logs & temp
 *.log
 tmp/
+
+*.geniespace.json
