@@ -399,6 +399,7 @@
                 "## Toronto is the largest market (16,725 listings, 3.3× Vancouver), but Vancouver is the priciest — median 272 vs 161 CAD a night\n",
                 "\n",
                 "**Toronto** — 68% entire homes · median 258 days available a year · avg rating 4.79 · 1.5 listings per host  \n",
+                "**Montreal** — 82% entire homes · median 255 days available a year · avg rating 4.73 · 2.8 listings per host  \n",
                 "**Vancouver** — 82% entire homes · median 193 days available a year · avg rating 4.80 · 1.4 listings per host\n"
               ]
             }
@@ -1207,8 +1208,8 @@
               "lines": [
                 "## Vancouver charges 69% more than Toronto at the median; the gap is widest for private room (+80%)\n",
                 "\n",
-                "Hosts with 2+ listings run 47% of listings in Toronto, 38% of listings in Vancouver.  \n",
-                "Monthly-only listings (minimum stay 28+ nights): 52% in Toronto, 24% in Vancouver.\n"
+                "Hosts with 2+ listings run 77% of listings in Montreal, 47% of listings in Toronto, 38% of listings in Vancouver.  \n",
+                "Monthly-only listings (minimum stay 28+ nights): 52% in Toronto, 51% in Montreal, 24% in Vancouver.\n"
               ]
             }
           },
@@ -2147,11 +2148,12 @@
             "name": "txt037",
             "multilineTextboxSpec": {
               "lines": [
-                "## The model beats the median baseline by 55%, but its error in Vancouver is 1.3× Toronto's\n",
+                "## The model beats the median baseline by 48%, but its error in Vancouver is 1.3× Toronto's — and on unseen Montreal MAE jumps to 80 CAD (baseline 118) vs 53 on training cities\n",
                 "\n",
                 "**Toronto** — MAE 46 CAD vs baseline 104 (28% of the median price)  \n",
                 "**Vancouver** — MAE 61 CAD vs baseline 135 (22% of the median price)  \n",
-                "Listings above 500 CAD are under-priced by 173 CAD on average — the model shrinks towards typical prices.\n",
+                "**Montreal** — MAE 80 CAD vs baseline 118 (49% of the median price)  \n",
+                "Listings above 500 CAD are under-priced by 225 CAD on average — the model shrinks towards typical prices.\n",
                 "\n",
                 "⚠️ Errors below are computed on **all listings (train + test)** because `gold_model_predictions` has no `split` column, so they are optimistic. Official test-set MAE from `03_price_model`: Toronto **61.24**, Vancouver **92.25**, both **68.53 CAD** vs baseline **109.32 CAD**.\n"
               ]
